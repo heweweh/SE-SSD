@@ -163,7 +163,7 @@ data_root = "/data/zhengwu"
 def parse_args():
     parser = argparse.ArgumentParser(description="MegDet test detector")
     parser.add_argument("--config", default='../examples/second/configs/config.py', help="test config file path")
-    parser.add_argument("--checkpoint", default='epoch_58.pth',  help="checkpoint file")
+    parser.add_argument("--checkpoint", default='se-ssd-model.pth',  help="checkpoint file")
     parser.add_argument("--out", default='out.pkl', help="output result file")
     parser.add_argument("--json_out",  default='json_out.json', help="output result file name without extension", type=str)
     parser.add_argument("--eval", type=str, nargs="+", choices=["proposal", "proposal_fast", "bbox", "segm", "keypoints"], help="eval types",)
