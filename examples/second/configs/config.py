@@ -5,7 +5,7 @@ from pathlib import Path
 from det3d.builder import build_box_coder
 from det3d.utils.config_tool import get_downsample_factor
 
-data_root_prefix = "/mnt/proj50/zhengwu"
+data_root_prefix = "/home/liyue/workspace/datasets/KITTI"
 
 # norm_cfg = dict(type='SyncBN', eps=1e-3, momentum=0.01)
 norm_cfg = None
