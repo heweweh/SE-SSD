@@ -891,12 +891,20 @@ class MultiGroupHead(nn.Module):
 
 
     def predict(self, example, preds_dicts, test_cfg, **kwargs):
-        batch_valid_frustum = example['calib']['frustum']  # [batch_size, 1, 6, 4, 3]
+        def gen_none():
+            while True:
+                yield None
+        batch_valid_frustum = gen_none()
+        if 'calib' in example:
+            if 'frustum' in example['calib']:
+                example['calib']['frustum']  # [batch_size, 1, 6, 4, 3]
         batch_anchors = example["anchors"]
 
         rets = []
         for task_id, preds_dict in enumerate(preds_dicts):
-            meta_list = example["metadata"]  # length: 8
+            meta_list = gen_none()
+            if 'metadata' in example:
+                meta_list = example["metadata"]  # length: 8
             num_class_with_bg = self.num_classes[task_id]  # 1
             batch_size = batch_anchors[task_id].shape[0]
             batch_task_anchors = example["anchors"][task_id].view(batch_size, -1, self.box_n_dim)  # [8, 70400, 7]
@@ -1021,7 +1029,7 @@ class MultiGroupHead(nn.Module):
             else:
                 box_preds = torch.zeros([0, 7], dtype=float)
 
-            if box_preds.shape[0] > 0:
+            if box_preds.shape[0] > 0 and valid_frustum is not None:
                 from det3d.core.bbox.geometry import points_in_convex_polygon_3d_jit
                 indices = points_in_convex_polygon_3d_jit(box_preds[:, :3].cpu().numpy(), valid_frustum.cpu().numpy())
                 box_preds = box_preds[indices.reshape([-1])]
