@@ -1,7 +1,6 @@
 import logging
 from collections import defaultdict
 from enum import Enum
-import matplotlib.pyplot as plt
 import os
 import pickle
 import numpy as np
