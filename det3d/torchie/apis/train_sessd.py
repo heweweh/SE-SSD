@@ -263,9 +263,9 @@ def train_detector(model, dataset, cfg, distributed=False, validate=False, logge
     data_loaders = [DataLoader(ds, batch_size=batch_size, sampler=None, shuffle=True, num_workers=num_workers, collate_fn=collate_kitti, pin_memory=False,) for ds in dataset]  # TODO change pin_memory
     '''
     if cfg.my_paras.get("enable_ssl", False):
-        data_loaders = [build_dataloader(dataset[0], 4, cfg.data.workers_per_gpu, dist=distributed)]
-        data_loaders.append(build_dataloader(dataset[1], 4, cfg.data.workers_per_gpu, dist=distributed))
-        data_loaders.append(build_dataloader(dataset[2], 4, cfg.data.workers_per_gpu, dist=distributed))
+        data_loaders = [build_dataloader(dataset[0], cfg.data.samples_per_gpu, cfg.data.workers_per_gpu, dist=distributed)]
+        data_loaders.append(build_dataloader(dataset[1], cfg.data.samples_per_gpu, cfg.data.workers_per_gpu, dist=distributed))
+        data_loaders.append(build_dataloader(dataset[2], cfg.data.samples_per_gpu, cfg.data.workers_per_gpu, dist=distributed))
     else:
         data_loaders = [
             build_dataloader(ds, cfg.data.samples_per_gpu, cfg.data.workers_per_gpu, dist=distributed)

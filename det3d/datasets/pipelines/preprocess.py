@@ -254,7 +254,7 @@ class AssignTarget(object):
 
         # my addition
         self.target_class_names = [anchor_generator.class_name for anchor_generator in anchor_generators]
-        self.target_class_ids = [1]  # for car id
+        self.target_class_ids = [1, 2, 3]  # for car, pedestrain, cyclist
         self.enable_similar_type = assigner_cfg.get("enable_similar_type", False)
         if self.enable_similar_type:
             self.target_class_ids = [1, 2]  # for car id  # todo: addition of similar type
@@ -291,15 +291,20 @@ class AssignTarget(object):
         # get gt labels of targeted classes; limit ry range in [-pi, pi].
         if res["mode"] == "train" and res['labeled']:
             gt_dict = res["lidar"]["annotations"]
-            gt_mask = np.zeros(gt_dict["gt_classes"].shape, dtype=np.bool)
+            #gt_mask = np.zeros(gt_dict["gt_classes"].shape, dtype=np.bool)
+            tmp_gt_boxes = gt_dict["gt_boxes"]
+            tmp_gt_classes = gt_dict["gt_classes"]
+            tmp_gt_names = gt_dict["gt_names"]
+            gt_dict["gt_boxes"] = []
+            gt_dict["gt_classes"] = []
+            gt_dict["gt_names"] = []
             for target_class_id in self.target_class_ids:
-                gt_mask = np.logical_or(gt_mask, gt_dict["gt_classes"] == target_class_id)
-
-            gt_boxes = gt_dict["gt_boxes"][gt_mask]
-            gt_boxes[:, -1] = box_np_ops.limit_period(gt_boxes[:, -1], offset=0.5, period=np.pi * 2)  # limit ry to [-pi, pi]
-            gt_dict["gt_boxes"] = [gt_boxes]
-            gt_dict["gt_classes"] = [gt_dict["gt_classes"][gt_mask]]
-            gt_dict["gt_names"] = [gt_dict["gt_names"][gt_mask]]
+                gt_mask = tmp_gt_classes == target_class_id
+                gt_boxes = tmp_gt_boxes[gt_mask]
+                gt_boxes[:, -1] = box_np_ops.limit_period(gt_boxes[:, -1], offset=0.5, period=np.pi * 2)  # limit ry to [-pi, pi]
+                gt_dict["gt_boxes"].append(gt_boxes)
+                gt_dict["gt_classes"].append(tmp_gt_classes[gt_mask])
+                gt_dict["gt_names"].append(tmp_gt_names[gt_mask])
             res["lidar"]["annotations"] = gt_dict
 
             targets_dict = {}
@@ -323,15 +328,20 @@ class AssignTarget(object):
 
             ################# for raw points labels [unused] #######################
             gt_dict_raw = res["lidar"]["annotations_raw"]
-            gt_mask = np.zeros(gt_dict_raw["gt_classes"].shape, dtype=np.bool)
+            #gt_mask = np.zeros(gt_dict_raw["gt_classes"].shape, dtype=np.bool)
+            tmp_gt_boxes = gt_dict_raw["gt_boxes"]
+            tmp_gt_classes = gt_dict_raw["gt_classes"]
+            tmp_gt_names = gt_dict_raw["gt_names"]
+            gt_dict_raw["gt_boxes"] = []
+            gt_dict_raw["gt_classes"] = []
+            gt_dict_raw["gt_names"] = []
             for target_class_id in self.target_class_ids:
-                gt_mask = np.logical_or(gt_mask, gt_dict_raw["gt_classes"] == target_class_id)
-
-            gt_boxes = gt_dict_raw["gt_boxes"][gt_mask]
-            gt_boxes[:, -1] = box_np_ops.limit_period(gt_boxes[:, -1], offset=0.5, period=np.pi * 2)
-            gt_dict_raw["gt_boxes"] = [gt_boxes]
-            gt_dict_raw["gt_classes"] = [gt_dict_raw["gt_classes"][gt_mask]]
-            gt_dict_raw["gt_names"] = [gt_dict_raw["gt_names"][gt_mask]]
+                gt_mask = tmp_gt_classes == target_class_id
+                gt_boxes = tmp_gt_boxes[gt_mask]
+                gt_boxes[:, -1] = box_np_ops.limit_period(gt_boxes[:, -1], offset=0.5, period=np.pi * 2)
+                gt_dict_raw["gt_boxes"].append(gt_boxes)
+                gt_dict_raw["gt_classes"].append(tmp_gt_classes[gt_mask])
+                gt_dict_raw["gt_names"].append(tmp_gt_names[gt_mask])
             res["lidar"]["annotations_raw"] = gt_dict_raw
 
             targets_dict = {}

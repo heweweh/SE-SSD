@@ -10,7 +10,11 @@ data_root_prefix = "/home/liyue/workspace/datasets"
 # norm_cfg = dict(type='SyncBN', eps=1e-3, momentum=0.01)
 norm_cfg = None
 
-tasks = [dict(num_class=1, class_names=["Car"],),]
+tasks = [
+    dict(num_class=1, class_names=["Car"]),
+    dict(num_class=1, class_names=["Pedestrian"]),
+    dict(num_class=1, class_names=["Cyclist"]),
+]
 
 class_names = list(itertools.chain(*[t["class_names"] for t in tasks]))
 
@@ -79,6 +83,7 @@ model = dict(
     ),
 )
 
+
 target_assigner = dict(
     type="iou",
     anchor_generators=[
@@ -90,6 +95,24 @@ target_assigner = dict(
             matched_threshold=0.6,
             unmatched_threshold=0.45,
             class_name="Car",
+        ),
+        dict(
+            type="anchor_generator_range",
+            sizes=[0.6, 0.8, 1.73],
+            anchor_ranges=[0, -40.0, -0.6, 70.4, 40.0, -0.6],
+            rotations=[0, 1.57],
+            matched_threshold=0.4,
+            unmatched_threshold=0.2,
+            class_name="Pedestrian",
+        ),
+        dict(
+            type="anchor_generator_range",
+            sizes=[0.6, 1.76, 1.73],
+            anchor_ranges=[0, -40.0, -0.6, 70.4, 40.0, -0.6],
+            rotations=[0, 1.57],
+            matched_threshold=0.4,
+            unmatched_threshold=0.2,
+            class_name="Cyclist",
         ),
     ],
     sample_positive_fraction=-1,
@@ -104,7 +127,7 @@ assigner = dict(
     target_assigner=target_assigner,
     out_size_factor=8,
     debug=False,
-    enable_similar_type=True,
+    enable_similar_type=False,
 )
 
 
@@ -277,7 +300,8 @@ log_level = "INFO"
 work_dir = "/home/liyue/workspace/adas/SE-SSD/" + TAG
 # load_from: "path of pre-trained checkpoint to initialize both teacher & student, e.g., CIA-SSD pre-trained model"
 # load_from = "/xxx/xxx/xxx/epoch_60.pth"
-load_from = "/home/liyue/workspace/adas/SE-SSD/exp_se_ssd_v1_8/se-ssd-model.pth"
+#load_from = "/home/liyue/workspace/adas/SE-SSD/exp_se_ssd_v1_8/se-ssd-model.pth"
+load_from = None
 resume_from = None
 workflow = [("train", 60), ("val", 1)] if my_paras['enable_ssl'] else [("train", 60), ("val", 1)]
 save_file = False if TAG == "debug" or TAG == "exp_debug" or Path(work_dir, "Det3D").is_dir() else True
