@@ -307,22 +307,22 @@ class AssignTarget(object):
                 gt_dict["gt_names"].append(tmp_gt_names[gt_mask])
             res["lidar"]["annotations"] = gt_dict
 
-            targets_dict = {}
+            targets_list = []
             for idx, target_assigner in enumerate(self.target_assigners):
-                targets_dict = target_assigner.assign_v2(
+                targets_list.append(target_assigner.assign_v2(
                     self.anchor_dicts_by_task[idx],
                     gt_dict["gt_boxes"][idx],  # (x, y, z, w, l, h, r)
                     anchors_mask=None,
                     gt_classes=gt_dict["gt_classes"][idx],
                     gt_names=gt_dict["gt_names"][idx],
                     enable_similar_type=self.enable_similar_type,
-                )
+                ))
 
             targets.update({
-                "labels": [targets_dict["labels"]],
-                "reg_targets": [targets_dict["bbox_targets"]],
-                "reg_weights": [targets_dict["bbox_outside_weights"]],
-                "positive_gt_id": [targets_dict["positive_gt_id"]],
+                "labels": [t["labels"] for t in targets_list],
+                "reg_targets": [t["bbox_targets"] for t in targets_list],
+                "reg_weights": [t["bbox_outside_weights"] for t in targets_list],
+                "positive_gt_id": [t["positive_gt_id"] for t in targets_list],
             })
 
 
@@ -344,22 +344,22 @@ class AssignTarget(object):
                 gt_dict_raw["gt_names"].append(tmp_gt_names[gt_mask])
             res["lidar"]["annotations_raw"] = gt_dict_raw
 
-            targets_dict = {}
+            targets_list = []
             for idx, target_assigner in enumerate(self.target_assigners):
-                targets_dict = target_assigner.assign_v2(
+                targets_list.append(target_assigner.assign_v2(
                     self.anchor_dicts_by_task[idx],
                     gt_dict_raw["gt_boxes"][idx],
                     anchors_mask=None,
                     gt_classes=gt_dict_raw["gt_classes"][idx],
                     gt_names=gt_dict_raw["gt_names"][idx],
                     enable_similar_type=self.enable_similar_type,
-                )
+                ))
 
             targets_raw.update({
-                "labels": [targets_dict["labels"]],
-                "reg_targets": [targets_dict["bbox_targets"]],
-                "reg_weights": [targets_dict["bbox_outside_weights"]],
-                "positive_gt_id": [targets_dict["positive_gt_id"]],
+                "labels": [t["labels"] for t in targets_list],
+                "reg_targets": [t["bbox_targets"] for t in targets_list],
+                "reg_weights": [t["bbox_outside_weights"] for t in targets_list],
+                "positive_gt_id": [t["positive_gt_id"] for t in targets_list],
             })
             ######################## end #########################
 

@@ -213,7 +213,7 @@ class Trainer(object):
         self.logger.info("load checkpoint from %s", filename)
         checkpoint_0 = load_checkpoint(self.model, filename, map_location, strict, self.logger)
         checkpoint_1 = load_checkpoint(self.model_ema, filename, map_location, strict, self.logger)
-        self.optimizer.load_state_dict(checkpoint_0["optimizer"])
+        #self.optimizer.load_state_dict(checkpoint_0["optimizer"])
         return checkpoint_0
 
     def load_checkpoint(self, filename, map_location="cpu", strict=False):

@@ -69,33 +69,32 @@ class TextLoggerHook(LoggerHook):
         else:
             class_names = trainer.model.bbox_head.class_names
 
-        for idx, task_class_names in enumerate(class_names):
-            log_items = [f"task : {task_class_names}"]
-            log_str = ""
-            for name, val in log_dict.items():
-                # TODO:
-                if name in ["mode", "Epoch", "iter", "lr", "time", "data_time", "memory", "epoch", "transfer_time", "forward_time", "loss_parse_time",]:
-                    continue
+        #for idx, task_class_names in enumerate(class_names):
+        log_items = []
+        log_str = ""
+        for name, val in log_dict.items():
+            # TODO:
+            if name in ["mode", "Epoch", "iter", "lr", "time", "data_time", "memory", "epoch", "transfer_time", "forward_time", "loss_parse_time",]:
+                continue
 
-                if isinstance(val, float):
-                    val = "{:.4f}".format(val)
+            if isinstance(val, float):
+                val = "{:.4f}".format(val)
 
-                if isinstance(val, list):
-                    log_items.append(
-                        "{}: {}".format(name, self._convert_to_precision4(val[idx]))
-                    )
-                else:
-                    log_items.append("{}: {}".format(name, val))
+            if isinstance(val, list):
+                log_items.append(
+                    "{}: {}".format(name, self._convert_to_precision4(val))
+                )
+            else:
+                log_items.append("{}: {}".format(name, val))
 
-            log_str += ", ".join(log_items)
-            if idx == (len(class_names) - 1):
-                log_str += "\n"
-            trainer.logger.info(log_str)
+        log_str += ", ".join(log_items)
+        log_str += "\n"
+        trainer.logger.info(log_str)
 
     def _dump_log(self, log_dict, trainer):
         json_log = OrderedDict()
         for k, v in log_dict.items():
-            json_log[k] = self._round_float(v)
+            json_log[k] = str(self._round_float(v))
 
         if trainer.rank == 0:
             with open(self.json_log_path, "a+") as f:

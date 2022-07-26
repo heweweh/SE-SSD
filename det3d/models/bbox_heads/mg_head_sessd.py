@@ -719,6 +719,9 @@ class MultiGroupHead(nn.Module):
             # get targets and weights.
             labels = example["labels"][task_id]  # cls_labels: [batch_size, 70400], elem in [-1, 0, 1].
             reg_targets = example["reg_targets"][task_id]  # reg_labels: [batch_size, 70400, 7].
+            if reg_targets.sum() == 0:
+                continue
+
             cls_weights, reg_weights, cared = self.prepare_loss_weights(labels, loss_norm=self.loss_norm, dtype=torch.float32, )  # all: [batch_size, 70400]
             cls_targets = labels * cared.type_as(labels)  # filter -1 in labels.
             cls_targets = cls_targets.unsqueeze(-1)  # [batch_size, 70400, 1].
@@ -819,6 +822,9 @@ class MultiGroupHead(nn.Module):
             # get targets and weights.
             labels = example["labels_raw"][task_id]
             reg_targets = example["reg_targets_raw"][task_id]
+            if reg_targets.sum() == 0:
+                continue
+
             cls_weights, reg_weights, cared = self.prepare_loss_weights(labels, loss_norm=self.loss_norm, dtype=torch.float32, )
             cls_targets = labels * cared.type_as(labels)
             cls_targets = cls_targets.unsqueeze(-1)

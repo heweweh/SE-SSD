@@ -300,8 +300,8 @@ log_level = "INFO"
 work_dir = "/home/liyue/workspace/adas/SE-SSD/" + TAG
 # load_from: "path of pre-trained checkpoint to initialize both teacher & student, e.g., CIA-SSD pre-trained model"
 # load_from = "/xxx/xxx/xxx/epoch_60.pth"
-#load_from = "/home/liyue/workspace/adas/SE-SSD/exp_se_ssd_v1_8/se-ssd-model.pth"
-load_from = None
+load_from = "/home/liyue/workspace/adas/SE-SSD/exp_se_ssd_v1_8/se-ssd-model-transfer.pth"
+#load_from = None
 resume_from = None
 workflow = [("train", 60), ("val", 1)] if my_paras['enable_ssl'] else [("train", 60), ("val", 1)]
 save_file = False if TAG == "debug" or TAG == "exp_debug" or Path(work_dir, "Det3D").is_dir() else True
