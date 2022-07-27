@@ -47,7 +47,7 @@ def parse_second_losses(losses):
             log_vars[loss_name] = [[i.cpu().item() for i in j] for j in loss_value][0]
         else:
             log_vars[loss_name] = [i.item() for i in loss_value]
-
+    log_vars['total_loss'] = [loss.detach().cpu()]
     return loss, log_vars
 
 
@@ -264,7 +264,8 @@ class Trainer(object):
         if train_mode:
             output_ema = model_ema(example, is_ema=[True, None])
             losses = model(example, is_ema=[False, output_ema], return_loss=True)
-            losses['loss'][0] += losses['consistency_loss'][0][0] * consistency_weight
+            for loss, c_loss in zip(losses['loss'], losses['consistency_loss']):
+                loss += c_loss[0] * consistency_weight
             self.call_hook("after_forward")
             loss, log_vars = parse_second_losses(losses)
             del losses

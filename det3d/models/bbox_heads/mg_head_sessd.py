@@ -803,9 +803,7 @@ class MultiGroupHead(nn.Module):
         for ret in rets:
             for k, v in ret.items():
                 rets_merged[k].append(v)
-
-        for k, v in loss_ema.items():
-            rets_merged[k].append(v[0])
+        rets_merged.update(loss_ema)
 
         return rets_merged
 
