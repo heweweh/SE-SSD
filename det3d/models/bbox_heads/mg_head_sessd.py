@@ -618,85 +618,86 @@ class MultiGroupHead(nn.Module):
         '''
             each prediction of student matched with one prediction of teacher
         '''
-        batch_size = preds_stu[0]['box_preds'].shape[0]
-        # trans, trans_res = example['transformation'][unsupervision_mask], {}
-        # for key in trans[0].keys():
-        #     val_list = [trans[i][key] for i in range(batch_size)]
-        #     trans_res.update({key: np.stack(val_list)})
-        batch_trans = example['transformation']
-        batch_gt_dict_raw = example['annos_raw']
-        batch_box_preds_stu = preds_stu[0]["box_preds"].view(batch_size, -1, 7)
-        batch_cls_preds_stu = preds_stu[0]["cls_preds"].view(batch_size, -1, 1)
-        batch_dir_preds_stu = preds_stu[0]["dir_cls_preds"].view(batch_size, -1, 2)
-        batch_iou_preds_stu = preds_stu[0]["iou_preds"].view(batch_size, -1, 1)
-        batch_box_preds_tea = preds_tea[0]["box_preds"].view(batch_size, -1, 7)
-        batch_cls_preds_tea = preds_tea[0]["cls_preds"].view(batch_size, -1, 1)
-        batch_dir_preds_tea = preds_tea[0]["dir_cls_preds"].view(batch_size, -1, 2)
-        batch_iou_preds_tea = preds_tea[0]["iou_preds"].view(batch_size, -1, 1)
+        for task_id, (pred_stu, pred_tea) in enumerate(zip(preds_stu, preds_tea)):
+            batch_size = pred_stu['box_preds'].shape[0]
+            # trans, trans_res = example['transformation'][unsupervision_mask], {}
+            # for key in trans[0].keys():
+            #     val_list = [trans[i][key] for i in range(batch_size)]
+            #     trans_res.update({key: np.stack(val_list)})
+            batch_trans = example['transformation']
+            batch_gt_dict_raw = example['annos_raw']
+            batch_box_preds_stu = pred_stu["box_preds"].view(batch_size, -1, 7)
+            batch_cls_preds_stu = pred_stu["cls_preds"].view(batch_size, -1, 1)
+            batch_dir_preds_stu = pred_stu["dir_cls_preds"].view(batch_size, -1, 2)
+            batch_iou_preds_stu = pred_stu["iou_preds"].view(batch_size, -1, 1)
+            batch_box_preds_tea = pred_tea["box_preds"].view(batch_size, -1, 7)
+            batch_cls_preds_tea = pred_tea["cls_preds"].view(batch_size, -1, 1)
+            batch_dir_preds_tea = pred_tea["dir_cls_preds"].view(batch_size, -1, 2)
+            batch_iou_preds_tea = pred_tea["iou_preds"].view(batch_size, -1, 1)
 
-        batch_box_loss = torch.tensor([0.], dtype=torch.float32).cuda()
-        batch_cls_loss = torch.tensor([0.], dtype=torch.float32).cuda()
-        batch_iou_loss = torch.tensor([0.], dtype=torch.float32).cuda()
-        batch_dir_loss = torch.tensor([0.], dtype=torch.float32).cuda()
+            batch_box_loss = torch.tensor([0.], dtype=torch.float32).cuda()
+            batch_cls_loss = torch.tensor([0.], dtype=torch.float32).cuda()
+            batch_iou_loss = torch.tensor([0.], dtype=torch.float32).cuda()
+            batch_dir_loss = torch.tensor([0.], dtype=torch.float32).cuda()
 
-        batch_id = 0
-        for box_preds_stu_offset, cls_preds_stu, dir_preds_stu, iou_preds_stu, \
-            box_preds_tea_offset, cls_preds_tea, dir_preds_tea, iou_preds_tea, trans in \
-                zip(batch_box_preds_stu, batch_cls_preds_stu, batch_dir_preds_stu, batch_iou_preds_stu,
-                    batch_box_preds_tea, batch_cls_preds_tea, batch_dir_preds_tea, batch_iou_preds_tea, batch_trans):
-            batch_id += 1
-            box_preds_stu = self.box_coder.decode_torch(box_preds_stu_offset, example["anchors"][0][0])
-            box_preds_tea = self.box_coder.decode_torch(box_preds_tea_offset, example["anchors"][0][0])
+            batch_id = 0
+            for box_preds_stu_offset, cls_preds_stu, dir_preds_stu, iou_preds_stu, \
+                box_preds_tea_offset, cls_preds_tea, dir_preds_tea, iou_preds_tea, trans in \
+                    zip(batch_box_preds_stu, batch_cls_preds_stu, batch_dir_preds_stu, batch_iou_preds_stu,
+                        batch_box_preds_tea, batch_cls_preds_tea, batch_dir_preds_tea, batch_iou_preds_tea, batch_trans):
+                batch_id += 1
+                box_preds_stu = self.box_coder.decode_torch(box_preds_stu_offset, example["anchors"][task_id][0])
+                box_preds_tea = self.box_coder.decode_torch(box_preds_tea_offset, example["anchors"][task_id][0])
 
-            # filter predicted boxes
-            top_scores_keep_stu = torch.sigmoid(cls_preds_stu).squeeze(-1) >= 0.3  # [70400]
-            top_scores_keep_tea = torch.sigmoid(cls_preds_tea).squeeze(-1) >= 0.3  # [70400]
-            pos_anchors = example['anchors'][0][0][top_scores_keep_tea]
-            mask_stu = (box_preds_stu[:, :3] >= self.post_center_range[:3]).all(1)
-            mask_stu &= (box_preds_stu[:, :3] <= self.post_center_range[3:]).all(1)
-            mask_stu &= top_scores_keep_stu
-            mask_tea = (box_preds_tea[:, :3] >= self.post_center_range[:3]).all(1)
-            mask_tea &= (box_preds_tea[:, :3] <= self.post_center_range[3:]).all(1)
-            mask_tea &= top_scores_keep_tea
-            top_box_preds_stu, top_cls_preds_stu, top_dir_preds_stu, top_iou_preds_stu, \
-            top_box_preds_tea, top_cls_preds_tea, top_dir_preds_tea, top_iou_preds_tea \
-            = box_preds_stu[mask_stu], cls_preds_stu[mask_stu], dir_preds_stu[mask_stu], iou_preds_stu[mask_stu], \
-              box_preds_tea[mask_tea], cls_preds_tea[mask_tea], dir_preds_tea[mask_tea], iou_preds_tea[mask_tea]
+                # filter predicted boxes
+                top_scores_keep_stu = torch.sigmoid(cls_preds_stu).squeeze(-1) >= 0.3  # [70400]
+                top_scores_keep_tea = torch.sigmoid(cls_preds_tea).squeeze(-1) >= 0.3  # [70400]
+                pos_anchors = example['anchors'][task_id][0][top_scores_keep_tea]
+                mask_stu = (box_preds_stu[:, :3] >= self.post_center_range[:3]).all(1)
+                mask_stu &= (box_preds_stu[:, :3] <= self.post_center_range[3:]).all(1)
+                mask_stu &= top_scores_keep_stu
+                mask_tea = (box_preds_tea[:, :3] >= self.post_center_range[:3]).all(1)
+                mask_tea &= (box_preds_tea[:, :3] <= self.post_center_range[3:]).all(1)
+                mask_tea &= top_scores_keep_tea
+                top_box_preds_stu, top_cls_preds_stu, top_dir_preds_stu, top_iou_preds_stu, \
+                top_box_preds_tea, top_cls_preds_tea, top_dir_preds_tea, top_iou_preds_tea \
+                = box_preds_stu[mask_stu], cls_preds_stu[mask_stu], dir_preds_stu[mask_stu], iou_preds_stu[mask_stu], \
+                  box_preds_tea[mask_tea], cls_preds_tea[mask_tea], dir_preds_tea[mask_tea], iou_preds_tea[mask_tea]
 
-            if mask_stu.sum() > 0 and mask_tea.sum() > 0:
-                # transform boxes predicted by teacher with local & global augmentation
-                # top_box_preds_tea = self.per_box_loc_trans(top_box_preds_tea, gt_dict_raw['gt_boxes'][0], trans)
-                top_box_preds_tea[:, 1] = - top_box_preds_tea[:, 1] if trans["flipped"] else top_box_preds_tea[:, 1]
-                top_box_preds_tea[:, -1] = - top_box_preds_tea[:, -1] + np.pi if trans["flipped"] else top_box_preds_tea[:, -1]
-                top_box_preds_tea[:, :3] = box_torch_ops.rotation_points_single_angle(top_box_preds_tea[:, :3], trans["noise_rotation"], axis=2)
-                top_box_preds_tea[:, -1] += trans["noise_rotation"]
-                top_box_preds_tea[:, :-1] *= trans["noise_scale"]
-                # top_box_preds_tea[:, :3] += torch.from_numpy(trans['noise_trans']).float().cuda()
+                if mask_stu.sum() > 0 and mask_tea.sum() > 0:
+                    # transform boxes predicted by teacher with local & global augmentation
+                    # top_box_preds_tea = self.per_box_loc_trans(top_box_preds_tea, gt_dict_raw['gt_boxes'][0], trans)
+                    top_box_preds_tea[:, 1] = - top_box_preds_tea[:, 1] if trans["flipped"] else top_box_preds_tea[:, 1]
+                    top_box_preds_tea[:, -1] = - top_box_preds_tea[:, -1] + np.pi if trans["flipped"] else top_box_preds_tea[:, -1]
+                    top_box_preds_tea[:, :3] = box_torch_ops.rotation_points_single_angle(top_box_preds_tea[:, :3], trans["noise_rotation"], axis=2)
+                    top_box_preds_tea[:, -1] += trans["noise_rotation"]
+                    top_box_preds_tea[:, :-1] *= trans["noise_scale"]
+                    # top_box_preds_tea[:, :3] += torch.from_numpy(trans['noise_trans']).float().cuda()
 
-                # center consistency loss
-                box_consistency_loss, idx1, idx2, mask1, mask2 = self.nn_distance(top_box_preds_stu, top_box_preds_tea)
-                if box_consistency_loss is None:
-                    continue
-                batch_box_loss += box_consistency_loss
+                    # center consistency loss
+                    box_consistency_loss, idx1, idx2, mask1, mask2 = self.nn_distance(top_box_preds_stu, top_box_preds_tea)
+                    if box_consistency_loss is None:
+                        continue
+                    batch_box_loss += box_consistency_loss
 
-                # cls_score consistency loss
-                aligned_cls_preds_stu, aligned_cls_preds_tea = top_cls_preds_stu[mask1][idx2], top_cls_preds_tea[mask2][idx1]
-                scores_stu, scores_tea = torch.sigmoid(top_cls_preds_stu[mask1]), torch.sigmoid(aligned_cls_preds_tea)
-                score_consistency_loss = self.loss_score_consistency(scores_stu, scores_tea).mean()
-                batch_cls_loss += score_consistency_loss
+                    # cls_score consistency loss
+                    aligned_cls_preds_stu, aligned_cls_preds_tea = top_cls_preds_stu[mask1][idx2], top_cls_preds_tea[mask2][idx1]
+                    scores_stu, scores_tea = torch.sigmoid(top_cls_preds_stu[mask1]), torch.sigmoid(aligned_cls_preds_tea)
+                    score_consistency_loss = self.loss_score_consistency(scores_stu, scores_tea).mean()
+                    batch_cls_loss += score_consistency_loss
 
-                # iou consistency loss
-                aligned_iou_preds_tea = (top_iou_preds_tea[mask2][idx1] + 1) * 0.5
-                top_iou_preds_stu = (top_iou_preds_stu[mask1] + 1) * 0.5
-                iou_consistency_loss = self.loss_iou_consistency(top_iou_preds_stu, aligned_iou_preds_tea).mean()
-                batch_iou_loss += iou_consistency_loss
+                    # iou consistency loss
+                    aligned_iou_preds_tea = (top_iou_preds_tea[mask2][idx1] + 1) * 0.5
+                    top_iou_preds_stu = (top_iou_preds_stu[mask1] + 1) * 0.5
+                    iou_consistency_loss = self.loss_iou_consistency(top_iou_preds_stu, aligned_iou_preds_tea).mean()
+                    batch_iou_loss += iou_consistency_loss
 
-                # dir consistency loss
-                aligned_dir_preds_tea = top_dir_preds_tea[mask2][idx1]
-                aligned_dir_preds_tea = F.softmax(aligned_dir_preds_tea, dim=-1)
-                top_dir_preds_stu = F.softmax(top_dir_preds_stu[mask1], dim=-1)
-                dir_consistency_loss = self.loss_dir_consistency(top_dir_preds_stu, aligned_dir_preds_tea)
-                batch_dir_loss += dir_consistency_loss
+                    # dir consistency loss
+                    aligned_dir_preds_tea = top_dir_preds_tea[mask2][idx1]
+                    aligned_dir_preds_tea = F.softmax(aligned_dir_preds_tea, dim=-1)
+                    top_dir_preds_stu = F.softmax(top_dir_preds_stu[mask1], dim=-1)
+                    dir_consistency_loss = self.loss_dir_consistency(top_dir_preds_stu, aligned_dir_preds_tea)
+                    batch_dir_loss += dir_consistency_loss
 
         consistency_loss = (1.0 * batch_box_loss + 1.0 * batch_cls_loss + 1.0 * batch_iou_loss) / batch_size
         return consistency_loss
@@ -706,13 +707,12 @@ class MultiGroupHead(nn.Module):
         supervision_mask = example["ssl_labeled"] == 1 if "ssl_labeled" in example.keys() else torch.ones(len(example['metadata'])) == 1
         consistency_loss = self.consistency_loss(preds_dicts, preds_ema, example)
         loss_ema = self.get_model_ema_loss(example, preds_ema)
-
-        batch_anchors = example["anchors"][0][supervision_mask]
-        batch_size_device = batch_anchors.shape[0]
-
+        
         rets = []
         for task_id, preds_dict in enumerate(preds_dicts):
             # get predictions.
+            batch_anchors = example["anchors"][task_id][supervision_mask]
+            batch_size_device = batch_anchors.shape[0]
             box_preds = preds_dict["box_preds"][supervision_mask]
             cls_preds = preds_dict["cls_preds"][supervision_mask]
 
@@ -811,11 +811,11 @@ class MultiGroupHead(nn.Module):
 
     def get_model_ema_loss(self, example, preds_dicts):
         supervision_mask = example["ssl_labeled"] == 1 if "ssl_labeled" in example.keys() else torch.ones(len(example['metadata'])) == 1
-        batch_anchors = example["anchors"][0][supervision_mask]
-        batch_size_device = batch_anchors.shape[0]
-
+        
         rets = []
         for task_id, preds_dict in enumerate(preds_dicts):
+            batch_anchors = example["anchors"][task_id][supervision_mask]
+            batch_size_device = batch_anchors.shape[0]
             box_preds = preds_dict["box_preds"][supervision_mask]
             cls_preds = preds_dict["cls_preds"][supervision_mask]
 
@@ -912,7 +912,7 @@ class MultiGroupHead(nn.Module):
                 meta_list = example["metadata"]  # length: 8
             num_class_with_bg = self.num_classes[task_id]  # 1
             batch_size = batch_anchors[task_id].shape[0]
-            batch_task_anchors = example["anchors"][task_id].view(batch_size, -1, self.box_n_dim)  # [8, 70400, 7]
+            batch_task_anchors = batch_anchors[task_id].view(batch_size, -1, self.box_n_dim)  # [8, 70400, 7]
             batch_anchors_mask = [None] * batch_size
             batch_cls_preds = preds_dict["cls_preds"].view(batch_size, -1, num_class_with_bg)  # [8, 70400, 1]
             batch_box_preds = preds_dict["box_preds"].view(batch_size, -1, self.box_n_dim)  # [batch_size, 70400, 7]
@@ -929,7 +929,7 @@ class MultiGroupHead(nn.Module):
                                                  batch_reg_preds,
                                                  batch_dir_preds,
                                                  batch_iou_preds,
-                                                 batch_anchors,
+                                                 batch_task_anchors,
                                                  batch_anchors_mask,
                                                  meta_list,
                                                  batch_valid_frustum))
@@ -961,7 +961,7 @@ class MultiGroupHead(nn.Module):
                             batch_valid_frustum=None):
         predictions_dicts = []
         post_center_range = self.post_center_range
-        anchors = batch_anchors[0][0]
+        anchors = batch_anchors[0]
 
         for box_preds, cls_preds, dir_preds, iou_preds, a_mask, meta, valid_frustum in zip(batch_reg_preds,  batch_cls_preds, batch_dir_preds,
                                                                                           batch_iou_preds, batch_anchors_mask, meta_list, batch_valid_frustum):
