@@ -319,7 +319,7 @@ class AssignTarget(object):
                 ))
 
             targets.update({
-                "labels": [t["labels"] for t in targets_list],
+                "labels": [(t["labels"] > 0).astype(np.int) for t in targets_list],
                 "reg_targets": [t["bbox_targets"] for t in targets_list],
                 "reg_weights": [t["bbox_outside_weights"] for t in targets_list],
                 "positive_gt_id": [t["positive_gt_id"] for t in targets_list],
@@ -356,7 +356,7 @@ class AssignTarget(object):
                 ))
 
             targets_raw.update({
-                "labels": [t["labels"] for t in targets_list],
+                "labels": [(t["labels"] > 0).astype(np.int) for t in targets_list],
                 "reg_targets": [t["bbox_targets"] for t in targets_list],
                 "reg_weights": [t["bbox_outside_weights"] for t in targets_list],
                 "positive_gt_id": [t["positive_gt_id"] for t in targets_list],

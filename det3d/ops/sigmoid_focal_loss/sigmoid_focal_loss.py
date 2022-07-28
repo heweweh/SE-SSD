@@ -9,7 +9,7 @@ class SigmoidFocalLossFunction(Function):
     @staticmethod
     def forward(ctx, input, target, gamma=2.0, alpha=0.25):
         ctx.save_for_backward(input, target)
-        num_classes = input.shape[1]
+        num_classes = input.shape[-1]
         ctx.num_classes = num_classes
         ctx.gamma = gamma
         ctx.alpha = alpha
