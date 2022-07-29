@@ -456,14 +456,14 @@ class rbbox_to_corners(nn.Module):
         '''
                     There is no rotation performed here. As axis are aligned.
                                           ^ [y]
-                                     1 --------- 2
+                                     0 --------- 3
                                      /          /    --->
-                                    0 -------- 3     [x]
+                                    1 -------- 2     [x]
                     Each node has the coordinate of [x, y]. Corresponding the order of input.
 
                     Output: [N, 8]
                             [x_0, y_0, x_1, y_1, x_2, y_2, x_3, y_3],
-                            if ry > 0, then rotate clockwisely.
+                            if ry > 0, then rotate counter-clockwisely.
 
                 '''
 
@@ -889,6 +889,8 @@ class odiou_3D(nn.Module):
         inter_area_cuda = inter_area.to(torch.device(gboxes.device))
         volume_inc = inter_h.mul(inter_area_cuda)
         volume_union = (volume_gboxes + volume_qboxes - volume_inc)
+        error_correction = volume_inc > volume_union
+        volume_inc[error_correction] = volume_union[error_correction]
         center_dist_square_cuda = center_dist_square.to(torch.device(gboxes.device))
         mbr_diag_3d_square_cuda = mbr_diag_3d_square.to(torch.device(gboxes.device))
 
