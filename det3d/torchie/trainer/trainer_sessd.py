@@ -53,7 +53,7 @@ def parse_second_losses(losses):
             log_vars[loss_name + ":avg"] = [loss_value.mean()]
             log_vars[loss_name + ":std"] = [loss_value.std()]
     log_vars["total_loss"] = [loss.detach().cpu()]
-    return loss, log_vars
+    return losses["loss"], log_vars
 
 
 class Trainer(object):

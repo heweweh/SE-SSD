@@ -32,6 +32,8 @@ from torch.nn.utils import clip_grad
 from .hook import Hook
 import torch
 
+from .pcgrad_fn import pcgrad_fn
+
 class OptimizerHook(Hook):
     def __init__(self, grad_clip=None):
         '''
@@ -54,8 +56,7 @@ class OptimizerHook(Hook):
 
     def after_train_iter(self, trainer):
         # operation after call `after_train_iter`
-        trainer.optimizer.zero_grad()
-        trainer.outputs["loss"].backward()
+        pcgrad_fn(trainer.model, trainer.outputs["loss"], trainer.optimizer)
         if self.grad_clip is not None:
             self.clip_grads(trainer.model.parameters())
         trainer.optimizer.step()
