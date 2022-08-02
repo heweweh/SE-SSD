@@ -755,7 +755,7 @@ class MultiGroupHead(nn.Module):
 
 
             # for analysis.
-            loc_loss_elem = [loc_loss[:, :, i].sum() / batch_size_device for i in range(loc_loss.shape[-1])]
+            loc_loss_elem = torch.stack([loc_loss[:, :, i].sum() / batch_size_device for i in range(loc_loss.shape[-1])])
 
             # for iou prediction
             iou_preds = preds_dict["iou_preds"][supervision_mask]
@@ -780,15 +780,15 @@ class MultiGroupHead(nn.Module):
 
             # loc_loss_reduced / ious_loss
             loss = cls_loss_reduced + ious_loss + dir_loss + iou_pred_loss
-
+            
             ret = {
-                "loss": loss,
-                "cls_loss_reduced": cls_loss_reduced.detach().cpu().mean(),
-                "loc_loss_reduced": loc_loss_reduced.detach().cpu().mean(),
+                "loss": loss.exp(),
+                "cls_loss_reduced": cls_loss_reduced.detach().cpu(),
+                "loc_loss_reduced": loc_loss_reduced.detach().cpu(),
                 "dir_loss_reduced": dir_loss.detach().cpu() if self.use_direction_classifier else None,
                 "iou_pred_loss": iou_pred_loss.detach().cpu(),
                 "consistency_loss": consistency_loss,
-                "loc_loss_elem": [elem.detach().cpu() for elem in loc_loss_elem],
+                "loc_loss_elem": loc_loss_elem.detach().cpu(),
                 "cls_pos_loss": cls_pos_loss.detach().cpu(),
                 "cls_neg_loss": cls_neg_loss.detach().cpu(),
                 "ious_loss": ious_loss.detach().cpu(),
@@ -853,7 +853,7 @@ class MultiGroupHead(nn.Module):
                 dir_loss = self.loss_aux._loss_weight * dir_loss.sum() / batch_size_device
 
             # for analysis.
-            loc_loss_elem = [loc_loss[:, :, i].sum() / batch_size_device for i in range(loc_loss.shape[-1])]
+            loc_loss_elem = torch.stack([loc_loss[:, :, i].sum() / batch_size_device for i in range(loc_loss.shape[-1])])
 
             # for iou prediction
             iou_preds = preds_dict["iou_preds"][supervision_mask]
@@ -871,12 +871,12 @@ class MultiGroupHead(nn.Module):
 
 
             ret = {
-                "loss_ema": loss.detach().cpu(),
-                "cls_loss_reduced_ema": cls_loss_reduced.detach().cpu().mean(),
-                "loc_loss_reduced_ema": loc_loss_reduced.detach().cpu().mean(),
+                "loss_ema": loss.detach().exp().cpu(),
+                "cls_loss_reduced_ema": cls_loss_reduced.detach().cpu(),
+                "loc_loss_reduced_ema": loc_loss_reduced.detach().cpu(),
                 "dir_loss_reduced_ema": dir_loss.detach().cpu() if self.use_direction_classifier else None,
                 "iou_pred_loss_ema": iou_pred_loss.detach().cpu(),
-                "loc_loss_elem_ema": [elem.detach().cpu() for elem in loc_loss_elem],
+                "loc_loss_elem_ema": loc_loss_elem.detach().cpu(),
                 "cls_pos_loss_ema": cls_pos_loss.detach().cpu(),
                 "cls_neg_loss_ema": cls_neg_loss.detach().cpu(),
                 "num_pos_ema": (labels > 0)[0].sum(),

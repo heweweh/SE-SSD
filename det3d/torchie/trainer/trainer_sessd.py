@@ -41,13 +41,18 @@ def parse_second_losses(losses):
     log_vars = OrderedDict()
     loss = sum(losses["loss"])
     for loss_name, loss_value in losses.items():
-        if loss_name in ["loc_loss_elem", "loc_loss_elem_ema"]:
-            log_vars[loss_name] = [[i.item() for i in j] for j in loss_value]
-        elif loss_name in ["consistency_loss", "consistency_loss_ema"]:
-            log_vars[loss_name] = [[i.cpu().item() for i in j] for j in loss_value][0]
+        if isinstance(loss_value, list):
+            tensor = torch.stack(loss_value).detach().cpu().double()
+            log_vars[loss_name + ":max"] = [tensor.max()]
+            log_vars[loss_name + ":min"] = [tensor.min()]
+            log_vars[loss_name + ":avg"] = [tensor.mean()]
+            log_vars[loss_name + ":std"] = [tensor.std()]
         else:
-            log_vars[loss_name] = [i.item() for i in loss_value]
-    log_vars['total_loss'] = [loss.detach().cpu()]
+            log_vars[loss_name + ":max"] = [loss_value.max()]
+            log_vars[loss_name + ":min"] = [loss_value.min()]
+            log_vars[loss_name + ":avg"] = [loss_value.mean()]
+            log_vars[loss_name + ":std"] = [loss_value.std()]
+    log_vars["total_loss"] = [loss.detach().cpu()]
     return loss, log_vars
 
 
@@ -265,7 +270,7 @@ class Trainer(object):
             output_ema = model_ema(example, is_ema=[True, None])
             losses = model(example, is_ema=[False, output_ema], return_loss=True)
             for loss, c_loss in zip(losses['loss'], losses['consistency_loss']):
-                loss += c_loss[0] * consistency_weight
+                loss = loss + c_loss[0] * consistency_weight
             self.call_hook("after_forward")
             loss, log_vars = parse_second_losses(losses)
             del losses

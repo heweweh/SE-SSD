@@ -285,12 +285,12 @@ data = dict(
 # for cia optimizer
 optimizer = dict(type="adam", amsgrad=0.0, wd=0.01, fixed_wd=True, moving_average=False,)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-lr_config = dict(type="one_cycle", lr_max=0.003, moms=[0.95, 0.85], div_factor=10.0, pct_start=0.4,)  # learning policy in training hooks
+lr_config = dict(type="one_cycle", lr_max=0.0005, moms=[0.95, 0.85], div_factor=10.0, pct_start=0.4,)  # learning policy in training hooks
 
 
 
 checkpoint_config = dict(interval=1)
-log_config = dict(interval=10,hooks=[dict(type="TextLoggerHook"),],) # dict(type='TensorboardLoggerHook')
+log_config = dict(interval=10,hooks=[dict(type='TensorboardLoggerHook'),],)  # dict(interval=10,hooks=[dict(type="TextLoggerHook"),],)
 
 # runtime settings
 total_epochs = 60
@@ -300,7 +300,7 @@ log_level = "INFO"
 work_dir = "/home/liyue/workspace/adas/SE-SSD/" + TAG
 # load_from: "path of pre-trained checkpoint to initialize both teacher & student, e.g., CIA-SSD pre-trained model"
 # load_from = "/xxx/xxx/xxx/epoch_60.pth"
-load_from = "/home/liyue/workspace/adas/SE-SSD/exp_se_ssd_v1_8/se-ssd-model-transfer.pth"
+load_from = "/home/liyue/workspace/adas/SE-SSD/exp_se_ssd_v1_8_bak/latest.pth"
 #load_from = None
 resume_from = None
 workflow = [("train", 60), ("val", 1)] if my_paras['enable_ssl'] else [("train", 60), ("val", 1)]
