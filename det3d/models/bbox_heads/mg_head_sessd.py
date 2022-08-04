@@ -782,7 +782,7 @@ class MultiGroupHead(nn.Module):
             loss = cls_loss_reduced + ious_loss + dir_loss + iou_pred_loss
             
             ret = {
-                "loss": loss.exp(),
+                "loss": loss,
                 "cls_loss_reduced": cls_loss_reduced.detach().cpu(),
                 "loc_loss_reduced": loc_loss_reduced.detach().cpu(),
                 "dir_loss_reduced": dir_loss.detach().cpu() if self.use_direction_classifier else None,
@@ -871,7 +871,7 @@ class MultiGroupHead(nn.Module):
 
 
             ret = {
-                "loss_ema": loss.detach().exp().cpu(),
+                "loss_ema": loss.detach().cpu(),
                 "cls_loss_reduced_ema": cls_loss_reduced.detach().cpu(),
                 "loc_loss_reduced_ema": loc_loss_reduced.detach().cpu(),
                 "dir_loss_reduced_ema": dir_loss.detach().cpu() if self.use_direction_classifier else None,

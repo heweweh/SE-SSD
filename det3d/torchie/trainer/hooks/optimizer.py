@@ -32,7 +32,7 @@ from torch.nn.utils import clip_grad
 from .hook import Hook
 import torch
 
-from .pcgrad_fn import pcgrad_fn
+from .pcgrad_fn_sep import pcgrad_fn
 
 class OptimizerHook(Hook):
     def __init__(self, grad_clip=None):
