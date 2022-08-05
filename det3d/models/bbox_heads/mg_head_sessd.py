@@ -478,6 +478,8 @@ class MultiGroupHead(nn.Module):
             self.tasks.append(Head(in_channels, num_pred, num_cls, use_dir=self.use_direction_classifier, \
                                    num_dir=num_dirs[task_id] if self.use_direction_classifier else None,
                                    header=False, ))
+        self.sigma = nn.Parameter(torch.ones(len(self.tasks), 4, requires_grad=True))
+        self.register_parameter("sigma", self.sigma)
 
         logger.info("Finish MultiGroupHead Initialization")
         post_center_range = [0, -40.0, -5.0, 70.4, 40.0, 5.0]
@@ -779,8 +781,10 @@ class MultiGroupHead(nn.Module):
                 ious_loss = self.odiou_3d_loss(gboxes, qboxes, weights, batch_size)
 
             # loc_loss_reduced / ious_loss
-            loss = cls_loss_reduced + ious_loss + dir_loss + iou_pred_loss
-            
+            task_sigma = self.sigma[task_id, :]
+            loss = torch.stack([cls_loss_reduced, ious_loss, dir_loss, iou_pred_loss]) * torch.exp(-task_sigma) + task_sigma
+            loss = loss.sum()
+
             ret = {
                 "loss": loss,
                 "cls_loss_reduced": cls_loss_reduced.detach().cpu(),
@@ -794,6 +798,10 @@ class MultiGroupHead(nn.Module):
                 "ious_loss": ious_loss.detach().cpu(),
                 "num_pos": (labels > 0)[0].sum(),
                 "num_neg": (labels == 0)[0].sum(),
+                "sigma_cls_lss": self.sigma[:,0].detach().cpu(),
+                "sigma_iou_lss": self.sigma[:,1].detach().cpu(),
+                "sigma_dir_lss": self.sigma[:,2].detach().cpu(),
+                "sigma_iou_prd": self.sigma[:,3].detach().cpu(),
             }
 
             rets.append(ret)
