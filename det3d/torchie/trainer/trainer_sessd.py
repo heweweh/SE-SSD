@@ -502,7 +502,7 @@ class Trainer(object):
             logger_hook = obj_from_dict(info, hooks, default_args=dict(interval=log_interval))
             self.register_hook(logger_hook, priority="VERY_LOW")
 
-    def register_training_hooks(self, lr_config, optimizer_config=None, checkpoint_config=None, log_config=None):
+    def register_training_hooks(self, lr_config=None, optimizer_config=None, checkpoint_config=None, log_config=None):
         """Register default hooks for training."""
         if optimizer_config is None:  # False
             optimizer_config = {}

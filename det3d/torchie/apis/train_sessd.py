@@ -274,11 +274,14 @@ def train_detector(model, dataset, cfg, distributed=False, validate=False, logge
 
     # build optimizer and lr_scheduler
     total_steps = cfg.total_epochs * len(data_loaders[0])
-    if cfg.lr_config.type in ["one_cycle", "multi_phase"]:
-        optimizer = build_one_cycle_optimizer(model, cfg.optimizer)
-        lr_scheduler = _create_learning_rate_scheduler(optimizer, cfg.lr_config, total_steps) # todo: will not register lr_hook in trainer
-        cfg.lr_config = None
-    else:                     # todo: we can add our own optimizer here
+    optimizer = None
+    if hasattr(cfg, "lr_config"):
+        if cfg.lr_config.type in ["one_cycle", "multi_phase"]:
+            optimizer = build_one_cycle_optimizer(model, cfg.optimizer)
+            lr_scheduler = _create_learning_rate_scheduler(optimizer, cfg.lr_config, total_steps) # todo: will not register lr_hook in trainer
+            cfg.lr_config = None
+    
+    if optimizer is None:
         optimizer = build_optimizer(model, cfg.optimizer)
         lr_scheduler = None
 
@@ -309,7 +312,7 @@ def train_detector(model, dataset, cfg, distributed=False, validate=False, logge
         optimizer_config = cfg.optimizer_config
 
     # register hooks
-    trainer.register_training_hooks(cfg.lr_config, optimizer_config, cfg.checkpoint_config, cfg.log_config)
+    trainer.register_training_hooks(None, optimizer_config, cfg.checkpoint_config, cfg.log_config)
 
     if distributed:
         trainer.register_hook(DistSamplerSeedHook())
