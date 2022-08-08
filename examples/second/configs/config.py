@@ -285,14 +285,13 @@ data = dict(
 # for cia optimizer
 optimizer = dict(type="Adam", lr=3e-2, )
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-#lr_config = dict(type="one_cycle", lr_max=0.003, moms=[0.95, 0.85], div_factor=10.0, pct_start=0.4,)  # learning policy in training hooks
-
+lr_config = dict(type="CosineAnnealingWarmRestarts", T_0=4, T_mult=2, eta_min=0, verbose=True, last_epoch=-1, )  # learning policy in training hooks
 
 checkpoint_config = dict(interval=1)
 log_config = dict(interval=10,hooks=[dict(type='TensorboardLoggerHook'),],)  # dict(interval=10,hooks=[dict(type="TextLoggerHook"),],)
 
 # runtime settings
-total_epochs = 60
+total_epochs = 128
 device_ids = range(8)
 dist_params = dict(backend="nccl", init_method="env://")
 log_level = "INFO"
@@ -302,7 +301,7 @@ work_dir = "/home/liyue/workspace/adas/SE-SSD/" + TAG
 load_from = "/home/liyue/workspace/adas/SE-SSD/exp_se_ssd_v1_8_bak/latest_ema.pth"
 #load_from = None
 resume_from = None
-workflow = [("train", 60), ("val", 1)] if my_paras['enable_ssl'] else [("train", 60), ("val", 1)]
+workflow = [("train", 128), ("val", 1)] if my_paras['enable_ssl'] else [("train", 60), ("val", 1)]
 save_file = False if TAG == "debug" or TAG == "exp_debug" or Path(work_dir, "Det3D").is_dir() else True
 
 

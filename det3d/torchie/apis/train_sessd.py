@@ -275,15 +275,12 @@ def train_detector(model, dataset, cfg, distributed=False, validate=False, logge
     # build optimizer and lr_scheduler
     total_steps = cfg.total_epochs * len(data_loaders[0])
     optimizer = None
-    if hasattr(cfg, "lr_config"):
-        if cfg.lr_config.type in ["one_cycle", "multi_phase"]:
-            optimizer = build_one_cycle_optimizer(model, cfg.optimizer)
-            lr_scheduler = _create_learning_rate_scheduler(optimizer, cfg.lr_config, total_steps) # todo: will not register lr_hook in trainer
-            cfg.lr_config = None
-    
+    lr_scheduler = None
     if optimizer is None:
         optimizer = build_optimizer(model, cfg.optimizer)
-        lr_scheduler = None
+
+    if hasattr(cfg, "lr_config"):
+        lr_scheduler = obj_from_dict(cfg.lr_config, torch.optim.lr_scheduler, dict(optimizer=optimizer))
 
     # put model on gpus
     if distributed:

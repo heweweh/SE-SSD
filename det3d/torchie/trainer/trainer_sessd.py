@@ -344,8 +344,6 @@ class Trainer(object):
             #     data_batch_unlabeled = next(dataloader_iterator_unlabel)
             # data_batch = self.merge_label_unlabel_data(data_batch, data_batch_unlabeled)
             global_step = base_step + i
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step(global_step)
 
             self._inner_iter = i
             self.call_hook("before_train_iter")
@@ -358,6 +356,9 @@ class Trainer(object):
                 self.log_buffer.update(outputs["log_vars"], outputs["num_samples"])
 
             self.outputs = outputs
+            if self.lr_scheduler is not None:
+                self.lr_scheduler.step(self._epoch + i/self.length)
+
             self.call_hook("after_train_iter")   # optim_hook: backprop;
             self._iter += 1
             self.update_ema_variables(self.model, self.model_ema, global_step)
