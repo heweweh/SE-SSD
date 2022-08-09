@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import os
+from tqdm import tqdm
 
 import warnings
 
@@ -224,7 +225,45 @@ class KittiDataset(PointCloudDataset):
             }
 
         return data
+    
+    def dump_data_with_filter(self, path, filters=["Car"]):
+        with open(path, "wb") as f:
+            filtered_data = []
+            print
+            for info in tqdm(self._kitti_infos):
+                res = {
+                    "type": "KittiDataset",
+                    "lidar": {
+                        "type": "lidar",
+                        "points": None,
+                        "ground_plane": None,
+                        "annotations": None,  # include centered gt_boxes and gt_names
+                        "names": None,        # 'Car'
+                        "targets": None,      # include cls_labels & reg_targets
+                    },
+                    "metadata": {
+                        "image_prefix": self._root_path,
+                        "num_point_features": KittiDataset.NumPointFeatures,
+                        "image_idx": info["image"]["image_idx"],
+                        "image_shape": info["image"]["image_shape"],
+                        "token": str(info["image"]["image_idx"]),
+                    },
+                    "calib": None,            # R0_rect, Tr_velo_to_cam, P2
+                    "cam": {
+                        "annotations": None,  # include 2d bbox and gt_names
+                    },
+                    "mode": "val" if self.test_mode else "train",
+                }
+                data, _ = self.pipeline(res, info)
+                discard = True
+                for name in data["lidar"]["annotations"]["names"]:
+                    if name in filters:
+                        discard = False
 
+                if not discard:
+                    filtered_data.append(info)
+
+            pickle.dump(filtered_data, f)
 
 # todo: for debug
 if __name__ == "__main__":
