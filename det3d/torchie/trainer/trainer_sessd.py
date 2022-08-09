@@ -4,6 +4,7 @@ import queue
 import sys
 import threading
 import time
+from tqdm import tqdm
 from collections import OrderedDict
 
 import torch
@@ -336,7 +337,7 @@ class Trainer(object):
         dataloader_iterator_unlabel = iter(data_loader_unlabel)
         consistency_weight = 1.0 * self.sigmoid_rampup(self.epoch)
 
-        for i, data_batch in enumerate(data_loader):
+        for i, data_batch in tqdm(enumerate(data_loader)):
             # try:
             #     data_batch_unlabeled = next(dataloader_iterator_unlabel)
             # except StopIteration:

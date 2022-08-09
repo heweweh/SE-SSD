@@ -204,7 +204,7 @@ def build_optimizer(model, optimizer_cfg):
     # if no paramwise option is specified, just use the global setting
     if paramwise_options is None:
         return obj_from_dict(
-            optimizer_cfg, torch.optim, dict(params=model.parameters())
+            optimizer_cfg, torch.optim, dict(params=filter(lambda p: p.requires_grad, model.parameters()))
         )
     else:
         assert isinstance(paramwise_options, dict)
