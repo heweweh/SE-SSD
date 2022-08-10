@@ -14,6 +14,8 @@ def get_gradient(model, loss):
 def set_gradient(grads, model, shapes):
     length = 0
     for i, p in enumerate(model.parameters()):
+        if not p.requires_grad:
+            continue
         i_size = np.prod(shapes[i])
         get_grad = grads[length:length + i_size]
         p.grad = get_grad.view(shapes[i])
@@ -29,6 +31,8 @@ def pcgrad_fn(model, losses, optimizer, mode='mean'):
         grads = []
         share_iter = iter(shares)
         for p in model.parameters():
+            if not p.requires_grad:
+                continue
             grad = None
             if p.grad is not None:
                 grad = p.grad.view(-1)

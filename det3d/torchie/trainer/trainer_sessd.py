@@ -337,9 +337,8 @@ class Trainer(object):
         dataloader_iterator_unlabel = iter(data_loader_unlabel)
         consistency_weight = 1.0 * self.sigmoid_rampup(self.epoch)
 
-        with tqdm(enumerate(data_loader)) as t:
-            t.set_description(f"Trainning:")
-            for i, data_batch in tqdm(enumerate(data_loader)):
+        with tqdm(data_loader) as t:
+            for i, data_batch in enumerate(tqdm(data_loader)):
                 # try:
                 #     data_batch_unlabeled = next(dataloader_iterator_unlabel)
                 # except StopIteration:
@@ -347,7 +346,9 @@ class Trainer(object):
                 #     data_batch_unlabeled = next(dataloader_iterator_unlabel)
                 # data_batch = self.merge_label_unlabel_data(data_batch, data_batch_unlabeled)
                 global_step = base_step + i
-                t.set_postfix(epoch=self._epoch, total_step=self.length, lr=self.lr_scheduler.get_last_lr(), c_w=consistency_weight, g_s=global_step)
+                
+                last_lr = self.lr_scheduler.get_last_lr()
+                t.set_description(f"train epoch:{self._epoch}, consistency_weight:{consistency_weight}, global_step:{global_step}, lr:{last_lr} ")
                 
                 self._inner_iter = i
                 self.call_hook("before_train_iter")
@@ -358,6 +359,8 @@ class Trainer(object):
 
                 if "log_vars" in outputs:
                     self.log_buffer.update(outputs["log_vars"], outputs["num_samples"])
+                    
+                self.log_buffer.update({"learning_rate" : last_lr})                    
 
                 self.outputs = outputs
                 if self.lr_scheduler is not None:
