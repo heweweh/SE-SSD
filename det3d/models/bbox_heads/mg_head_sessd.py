@@ -761,8 +761,8 @@ class MultiGroupHead(nn.Module):
             iou_preds = preds_dict["iou_preds"][supervision_mask]
             pos_pred_mask = reg_weights > 0
             iou_pos_preds = iou_preds.view(batch_size, -1, 1)[pos_pred_mask]
-            qboxes = self.box_coder.decode_torch(box_preds[pos_pred_mask], example["anchors"][0][supervision_mask][pos_pred_mask])
-            gboxes = self.box_coder.decode_torch(reg_targets[pos_pred_mask], example["anchors"][0][supervision_mask][pos_pred_mask])
+            qboxes = self.box_coder.decode_torch(box_preds[pos_pred_mask], example["anchors"][task_id][supervision_mask][pos_pred_mask])
+            gboxes = self.box_coder.decode_torch(reg_targets[pos_pred_mask], example["anchors"][task_id][supervision_mask][pos_pred_mask])
             iou_weights = reg_weights[pos_pred_mask]
             iou_pos_targets = iou3d_utils.boxes_aligned_iou3d_gpu(qboxes, gboxes).detach()
             iou_pos_targets = 2 * iou_pos_targets - 1
@@ -773,8 +773,8 @@ class MultiGroupHead(nn.Module):
             pos_pred_mask = reg_weights > 0
             if pos_pred_mask.sum() > 0:
                 qboxes = self.box_coder.decode_torch(preds_dict["box_preds"][supervision_mask].view(batch_size, -1, 7)[pos_pred_mask], \
-                                                     example["anchors"][0][supervision_mask][pos_pred_mask])
-                gboxes = self.box_coder.decode_torch(example["reg_targets"][0][pos_pred_mask], example["anchors"][0][supervision_mask][pos_pred_mask])
+                                                     example["anchors"][task_id][supervision_mask][pos_pred_mask])
+                gboxes = self.box_coder.decode_torch(example["reg_targets"][task_id][pos_pred_mask], example["anchors"][task_id][supervision_mask][pos_pred_mask])
                 weights = reg_weights[pos_pred_mask]
                 ious_loss = self.odiou_3d_loss(gboxes, qboxes, weights, batch_size)
 
@@ -782,18 +782,19 @@ class MultiGroupHead(nn.Module):
             loss = cls_loss_reduced + ious_loss + dir_loss + iou_pred_loss
 
             ret = {
-                "loss": loss,
-                "cls_loss_reduced": cls_loss_reduced.detach().cpu(),
-                "loc_loss_reduced": loc_loss_reduced.detach().cpu(),
-                "dir_loss_reduced": dir_loss.detach().cpu() if self.use_direction_classifier else None,
-                "iou_pred_loss": iou_pred_loss.detach().cpu(),
+                "loss" : loss,
                 "consistency_loss": consistency_loss,
-                "loc_loss_elem": loc_loss_elem.detach().cpu(),
-                "cls_pos_loss": cls_pos_loss.detach().cpu(),
-                "cls_neg_loss": cls_neg_loss.detach().cpu(),
-                "ious_loss": ious_loss.detach().cpu(),
-                "num_pos": (labels > 0)[0].sum(),
-                "num_neg": (labels == 0)[0].sum(),
+                f"loss:{task_id}" : loss.clone().detach().cpu(),
+                f"cls_loss_reduced:{task_id}": cls_loss_reduced.detach().cpu(),
+                f"loc_loss_reduced:{task_id}": loc_loss_reduced.detach().cpu(),
+                f"dir_loss_reduced:{task_id}": dir_loss.detach().cpu() if self.use_direction_classifier else None,
+                f"iou_pred_loss:{task_id}": iou_pred_loss.detach().cpu(),
+                f"loc_loss_elem:{task_id}": loc_loss_elem.detach().cpu(),
+                f"cls_pos_loss:{task_id}": cls_pos_loss.detach().cpu(),
+                f"cls_neg_loss:{task_id}": cls_neg_loss.detach().cpu(),
+                f"ious_loss:{task_id}": ious_loss.detach().cpu(),
+                f"num_pos:{task_id}": (labels > 0)[0].sum(),
+                f"num_neg:{task_id}": (labels == 0)[0].sum(),
             }
 
             rets.append(ret)
@@ -859,8 +860,8 @@ class MultiGroupHead(nn.Module):
             iou_preds = preds_dict["iou_preds"][supervision_mask]
             pos_pred_mask = reg_weights > 0
             iou_pos_preds = iou_preds.view(batch_size, -1, 1)[pos_pred_mask]
-            qboxes = self.box_coder.decode_torch(box_preds[pos_pred_mask], example["anchors_raw"][0][supervision_mask][pos_pred_mask])
-            gboxes = self.box_coder.decode_torch(reg_targets[pos_pred_mask], example["anchors_raw"][0][supervision_mask][pos_pred_mask])
+            qboxes = self.box_coder.decode_torch(box_preds[pos_pred_mask], example["anchors_raw"][task_id][supervision_mask][pos_pred_mask])
+            gboxes = self.box_coder.decode_torch(reg_targets[pos_pred_mask], example["anchors_raw"][task_id][supervision_mask][pos_pred_mask])
             iou_weights = reg_weights[pos_pred_mask]
             iou_pos_targets = iou3d_utils.boxes_aligned_iou3d_gpu(qboxes, gboxes).detach()
             iou_pos_targets = 2 * iou_pos_targets - 1
