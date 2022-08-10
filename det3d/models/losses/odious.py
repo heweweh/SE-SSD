@@ -889,8 +889,6 @@ class odiou_3D(nn.Module):
         inter_area_cuda = inter_area.to(torch.device(gboxes.device))
         volume_inc = inter_h.mul(inter_area_cuda)
         volume_union = (volume_gboxes + volume_qboxes - volume_inc)
-        error_correction = volume_inc > volume_union
-        volume_inc[error_correction] = volume_union[error_correction]
         center_dist_square_cuda = center_dist_square.to(torch.device(gboxes.device))
         mbr_diag_3d_square_cuda = mbr_diag_3d_square.to(torch.device(gboxes.device))
 
