@@ -283,9 +283,10 @@ data = dict(
 )
 
 # for cia optimizer
-optimizer = dict(type="Adam", lr=3e-2, )
+optimizer = dict(type="Adam", lr=3e-4)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-lr_config = dict(type="CosineAnnealingWarmRestarts", T_0=4, T_mult=2, eta_min=0, verbose=True, last_epoch=-1, )  # learning policy in training hooks
+#lr_config = dict(type="CosineAnnealingWarmRestarts", T_0=2, T_mult=2, eta_min=0, verbose=True, last_epoch=-1, )  # learning policy in training hooks
+lr_config = dict(type="ExponentialLR", gamma=0.75, last_epoch=-1, )  # learning policy in training hooks
 
 checkpoint_config = dict(interval=1)
 log_config = dict(interval=10,hooks=[dict(type='TensorboardLoggerHook'),],)  # dict(interval=10,hooks=[dict(type="TextLoggerHook"),],)
@@ -295,13 +296,13 @@ total_epochs = 128
 device_ids = range(8)
 dist_params = dict(backend="nccl", init_method="env://")
 log_level = "INFO"
-work_dir = "/home/liyue/workspace/adas/SE-SSD/" + TAG
+work_dir = "/home/liyue/workspace/adas/SE-SSD/current/"
 # load_from: "path of pre-trained checkpoint to initialize both teacher & student, e.g., CIA-SSD pre-trained model"
 # load_from = "/xxx/xxx/xxx/epoch_60.pth"
-load_from = "/home/liyue/workspace/adas/SE-SSD/exp_se_ssd_v1_8_bak/latest_ema.pth"
+load_from = "/home/liyue/workspace/adas/SE-SSD/latest/latest_ema.pth"
 #load_from = None
 resume_from = None
-workflow = [("train", 128), ("val", 1)] if my_paras['enable_ssl'] else [("train", 60), ("val", 1)]
+workflow = [("train", 64), ("val", 1)] if my_paras['enable_ssl'] else [("train", 60), ("val", 1)]
 save_file = False if TAG == "debug" or TAG == "exp_debug" or Path(work_dir, "Det3D").is_dir() else True
 
 
